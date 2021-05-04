@@ -1,9 +1,9 @@
-import { getRepository, Repository } from 'typeorm';
+import { getRepository, Repository } from "typeorm";
 
-import { User } from '../../../users/entities/User';
-import { Game } from '../../entities/Game';
+import { User } from "../../../users/entities/User";
+import { Game } from "../../entities/Game";
 
-import { IGamesRepository } from '../IGamesRepository';
+import { IGamesRepository } from "../IGamesRepository";
 
 export class GamesRepository implements IGamesRepository {
   private repository: Repository<Game>;
@@ -13,18 +13,25 @@ export class GamesRepository implements IGamesRepository {
   }
 
   async findByTitleContaining(param: string): Promise<Game[]> {
-    return this.repository
-      .createQueryBuilder()
-      // Complete usando query builder
+    param = param.toLowerCase();
+    return await this.repository
+      .createQueryBuilder("game")
+      .where("LOWER(game.title) LIKE :title", { title: `%${param}%` })
+      .getMany();
   }
 
   async countAllGames(): Promise<[{ count: string }]> {
-    return this.repository.query(); // Complete usando raw query
+    const query = "SELECT COUNT(game) FROM games AS game";
+    return await this.repository.query(query);
   }
 
   async findUsersByGameId(id: string): Promise<User[]> {
-    return this.repository
-      .createQueryBuilder()
-      // Complete usando query builder
+    const game = await this.repository
+      .createQueryBuilder("game")
+      .innerJoinAndSelect("game.users", "user")
+      .where("game.id = :id", { id })
+      .getOne();
+
+    return game?.users || [];
   }
 }
